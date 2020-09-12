@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
-// const slugify = require('slugify');
-// const geocoder = require('../utils/geocoder');
+const slugify = require('slugify');
+// slugify do stworzenia slugu
+const geocoder = require('../utils/geocoder');
 
 const BootcampSchema = new mongoose.Schema(
     {
@@ -99,11 +100,11 @@ const BootcampSchema = new mongoose.Schema(
             type: Date,
             default: Date.now
         },
-        // user: {
-        //     type: mongoose.Schema.ObjectId,
-        //     ref: 'User',
-        //     required: true
-        // }
+        user: {
+            type: mongoose.Schema.ObjectId,
+            ref: 'User',
+            required: true
+        }
     },
     {
         toJSON: { virtuals: true },
@@ -111,5 +112,47 @@ const BootcampSchema = new mongoose.Schema(
     }
 );
 
+// Tworzenei bootcamp slug z name. Tworzy łączenie z nazmyw i małą literką
+BootcampSchema.pre('save', function (next) {
+    this.slug = slugify(this.name, { lower: true })
+    console.log("Slugify ran", this.name);
+    next()
+})
 
-module.exports=mongoose.model('Bootcamp', BootcampSchema)
+// Geocode & Tworzenie lokalizacji
+BootcampSchema.pre('save', async function (next) {
+    const loc = await geocoder.geocode(this.address);
+    this.location = {
+        type: 'Point',
+        coordinates: [loc[0].longitude, loc[0].latitude],
+        formattedAddress: loc[0].formattedAddress,
+        street: loc[0].streetName,
+        city: loc[0].city,
+        state: loc[0].stateCode,
+        zipcode: loc[0].zipcode,
+        country: loc[0].countryCode
+    };
+    console.log(loc)
+
+    // Nie zapisuj adresu w DB
+    this.address = undefined;
+    next();
+});
+
+// usuń kursy kiedy odpowiedni bootcamp zostanie usunięty
+BootcampSchema.pre('remove', async function (next) {
+    console.log(`Przy okazji usunięcia bootcampu , kursy również zostały usunięte z bazy danych ${this._id}`);
+    await this.model('Course').deleteMany({ bootcamp: this._id });
+    next();
+});
+
+// Reverse populate with virtuals (z modelu courses)
+BootcampSchema.virtual('courses', {
+    ref: "Course",
+    localField: '_id',
+    foreignField: 'bootcamp',
+    justOne: false
+})
+
+
+module.exports = mongoose.model('Bootcamp', BootcampSchema)

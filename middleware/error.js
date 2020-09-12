@@ -1,12 +1,34 @@
+const ErrorResponse = require('../utils/errorResponse');
+
 const errorHandler = (err, req, res, next) => {
-
+    let error = { ...err };
+    
+    error.message = err.message;
     // Log to console for dev
-    console.log(err.stack.red);
+    console.log(err);
 
-    res.status(err.statusCode || 500).json({
-        success:false,
-        error:err.message || "Server Error"
+    // Mongose ad objectID
+    if (err.name === 'CastError') {
+        const message = `Nie znaleziono odpowiedniego Resource`;
+        error = new ErrorResponse(message, 404);
+    }
+
+    if (err.code === 11000) {
+        const message = 'Wprowadzono zduplikowaną wartość. Wymyśl proszę inna';
+        error = new ErrorResponse(message, 400);
+    }
+
+    // Mongoose validation error
+    if (err.name === 'ValidationError') {
+        const message = Object.values(err.errors).map(val => val.message);
+        // codeGame tutaj nie wiem o co chodzi z tym Object
+        error = new ErrorResponse(message, 400);
+    }
+
+    res.status(error.statusCode || 500).json({
+        success: false,
+        error: error.message || "Server Error"
     })
 }
 
-module.exports=errorHandler
+module.exports = errorHandler
