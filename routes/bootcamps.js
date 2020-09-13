@@ -7,8 +7,9 @@ const Bootcamp = require('../models/Bootcamp')
 
 
 // ----------------------
-// Include other resource routers
+// Include other resource routers. Wtedy kiedy np masz link api/v1/bootcamps/45345345/courses
 const courseRouter = require('./courses');
+const reviewRouter = require('./reviews');
 
 const advancedResults = require('../middleware/advancedResults')
 const {protect, authorize} = require('../middleware/auth')
@@ -17,6 +18,7 @@ const {protect, authorize} = require('../middleware/auth')
 
 // Re-route into other resource routers
 router.use('/:bootcampId/courses', courseRouter);
+router.use('/:bootcampId/reviews', reviewRouter);
 // ----------------------
 
 

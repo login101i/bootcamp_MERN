@@ -9,12 +9,12 @@ const errorHandler = (err, req, res, next) => {
 
     // Mongose ad objectID
     if (err.name === 'CastError') {
-        const message = `Nie znaleziono odpowiedniego Resource`;
+        const message = `Nie znaleziono odpowiedniego Resource ${err.value}`;
         error = new ErrorResponse(message, 404);
     }
 
     if (err.code === 11000) {
-        const message = 'Wprowadzono zduplikowaną wartość. Wymyśl proszę inna';
+        const message = 'Wprowadzono zduplikowaną wartość. Wymyśl proszę inną';
         error = new ErrorResponse(message, 400);
     }
 
